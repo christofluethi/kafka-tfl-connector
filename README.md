@@ -25,5 +25,7 @@ curl -X POST -H "Content-Type: application/json" -H "Accept: application/json" -
 ## Data
 Pushed CarPark Name with BayCount, Free and Occupied state to kafka topic
 
+```
 Key: Buckhurst Hill Stn (LUL)
 Value: 44 29 15
+```
