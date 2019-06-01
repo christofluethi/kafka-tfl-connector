@@ -1,6 +1,20 @@
 # kafka-tfl-connector
 Kafka Connector for Transport for London Unified API - CarPark API
 
+## Config
+```
+connector.class=ch.shaped.kafka.tfl.TfLSourceConnector
+tasks.max=1
+carpark=tfl-carpark
+appId=<ID>
+name=TfLSourceConnector
+carParkUrl=https://api.tfl.gov.uk
+appKey=<KEY>
+interval=500
+key.converter=org.apache.kafka.connect.storage.StringConverter
+value.converter=org.apache.kafka.connect.json.JsonConverter
+```
+
 ## Install
 
 ```
