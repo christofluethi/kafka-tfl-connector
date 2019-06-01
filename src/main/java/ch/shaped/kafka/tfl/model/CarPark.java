@@ -107,5 +107,4 @@ public class CarPark {
     public String getState() {
         return getBayCount()+" "+getFree()+" "+getOccupied();
     }
-
 }

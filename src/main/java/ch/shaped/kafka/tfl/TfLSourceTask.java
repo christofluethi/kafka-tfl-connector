@@ -2,6 +2,7 @@ package ch.shaped.kafka.tfl;
 
 import ch.shaped.kafka.tfl.model.CarPark;
 import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
@@ -14,12 +15,16 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.core.UriBuilder;
 import java.util.*;
 
+import static ch.shaped.kafka.tfl.model.TfLSchemas.*;
+
 public class TfLSourceTask extends SourceTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(TfLSourceTask.class);
     private String[] topics;
     private TfLOccupancy occupancy;
     private Integer interval;
+
+    private Map<String, String> last = new HashMap<>();
 
     public String version() {
         return TfLConstants.VERSION;
@@ -45,25 +50,49 @@ public class TfLSourceTask extends SourceTask {
         List<CarPark> carParks = occupancy.carPark();
 
         for (CarPark carPark : carParks) {
-            for (String topic : topics) {
-                records.add(generateSourceRecord(carPark, d, topic));
+            boolean changed = false;
+            if(last.containsKey(carPark.getName())) {
+                changed = !last.get(carPark.getName()).equals(carPark.getState());
+            } else {
+                last.put(carPark.getName(), carPark.getState());
+                changed = true;
             }
+
+            if(changed) {
+                LOG.info("CarPark '{}' changed to '{}'", carPark.getName(), carPark.getState());
+                for (String topic : topics) {
+                    records.add(generateSourceRecord(carPark, d, topic));
+                }
+            }
+
+            last.put(carPark.getName(), carPark.getState());
         }
 
         return records;
     }
+
 
     private SourceRecord generateSourceRecord(CarPark park, Date updated, String topic) {
         return new SourceRecord(
                 null,
                 null,
                 topic,
-                null, // partition will be inferred by the framework
+                null,
                 Schema.STRING_SCHEMA,
                 park.getName(),
-                Schema.STRING_SCHEMA,
-                park.getState(),
+                CARPARK_SCHEMA,
+                buildRecordValue(park),
                 updated.getTime());
+    }
+
+    private Struct buildRecordValue(CarPark park) {
+        Struct valueStruct = new Struct(CARPARK_SCHEMA)
+                .put(NAME, park.getName())
+                .put(BAY_COUNT, park.getBayCount())
+                .put(FREE, park.getFree())
+                .put(OCCUPIED, park.getOccupied());
+
+        return valueStruct;
     }
 
     public void stop() {

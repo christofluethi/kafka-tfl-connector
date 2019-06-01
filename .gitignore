@@ -6,6 +6,7 @@
 *.iml
 build
 target
+*.swp
 
 # Log file
 *.log
